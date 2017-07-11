@@ -4,7 +4,7 @@ import logging
 import resource
 import Queue
 
-logging.basicConfig(format='%(levelname)s : %(asctime)s : %(lineno)d : %(message)s', datefmt='%I:%M:%S %p',level=logging.ERROR)
+logging.basicConfig(format='%(levelname)s : %(asctime)s : %(lineno)d : %(message)s', datefmt='%I:%M:%S %p',level=logging.CRITICAL)
 
 class Node:
 	def __init__(self,state,parent,pathToGoal,costOfPath):
@@ -72,7 +72,7 @@ def expand_node(algorithm,node):
 				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1))
 	elif algorithm == "dfs":
 		for direction in reversed(directionList):
-			logging.debug(direction)
+			# logging.debug(direction)
 			newNodeState = move(node,direction)
 			if (newNodeState != "skipped"):
 				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1))
@@ -155,9 +155,12 @@ def dfs():
 	nodesExpanded = 1
 	maxSearchDepth = 0
 	while len(frontierStack)!=0:
+		# raw_input()
 		# print "len of frontierStack",len(frontierStack)
 		checkNode = frontierStack.pop() #pop the queue
 		# print "len frontierQueue",frontierQueue.qsize()
+
+		# display(checkNode.state)
 
 		if checkNode.state == goalState:
 			solution = [checkNode,nodesExpanded-1,maxSearchDepth]
@@ -165,19 +168,23 @@ def dfs():
 
 		tempFrontier = []
 		nodesExpanded= nodesExpanded+1
-		tempFrontier.append(expand_node("dfs",checkNode))
-		for x in reversed(tempFrontier):
-			for tempNode in x:
-				# logging.debug("exoanded to nodes:>>"+str(display(tempNode.state)))
+		tempFrontier.extend(expand_node("dfs",checkNode))
+
+		for tempNode in tempFrontier:
+			# for tempNode in x:
+
 				if str(tempNode.state) not in childSet:
+					if tempNode.state == goalState:
+						solution = [tempNode,nodesExpanded-1,maxSearchDepth]
+						return solution
 					maxSearchDepth = max(tempNode.costOfPath,maxSearchDepth)
-					logging.debug("expanded")
+					# logging.debug("expanded")
 					# display(tempNode.state)
 					frontierStack.append(tempNode)
 					childSet.add(str(tempNode.state))
 					# print "len frontierQueue",frontierQueue.qsize()
 				else:
-					logging.info("already visited")
+					logging.debug("already visited")
 		# raw_input()
 
 	return [initialNode,nodesExpanded-1,maxSearchDepth]
