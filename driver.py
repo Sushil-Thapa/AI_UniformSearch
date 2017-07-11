@@ -12,6 +12,10 @@ class Node:
 		self.parent = parent
 		self.pathToGoal = pathToGoal
 		self.costOfPath = costOfPath
+class Frontier:
+	def __init__(self,state):
+		self.state = state
+
 def create_node(state,parent,pathToGoal,costOfPath):
 	return Node(state,parent,pathToGoal,costOfPath)
 
@@ -57,27 +61,34 @@ def move(node,direction):
 
 	return nodeState
 
-def expand_node(node):
+def expand_node(algorithm,node):
 	childNodes = []
-	for direction in directionList:
-		newNodeState = move(node,direction)
-		if (newNodeState != "skipped"):
-			childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1))
+	if algorithm == "bfs":
+		for direction in directionList:
+			newNodeState = move(node,direction)
+			if (newNodeState != "skipped"):
+				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1))
+	elif algorithm == "dfs":
+		for direction in reversed(directionList):
+			newNodeState = move(node,direction)
+			if (newNodeState != "skipped"):
+				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1))
+
 	return childNodes
 
 def bfs():
+
 	# logging.debug("In BFS")
 	# display(initialState)
 	initialNode = create_node(initialState, None, "", 0)
 
-	frontier = [] #put get
+	# frontier = [] #put get
 	childSet = set() #add remove
 	frontierQueue = Queue.Queue()
 
-
 	childSet.add(str(initialNode.state))
 
-	frontier.append(initialNode)
+	# frontier.append(initialNode)
 	frontierQueue.put(initialNode)
 
 	nodesExpanded = 1
@@ -94,7 +105,7 @@ def bfs():
 
 		tempFrontier = []
 		nodesExpanded= nodesExpanded+1
-		tempFrontier.append(expand_node(checkNode))
+		tempFrontier.append(expand_node("bfs",checkNode))
 		for x in tempFrontier:
 			for tempNode in x:
 				if str(tempNode.state) not in childSet:
@@ -111,7 +122,55 @@ def bfs():
 
 
 def dfs():
-	logging.debug("In DFS")
+	'''
+	TODO:
+		frontier class
+		child nodes  too in nodein tempFrontier
+		remove O(n^2)
+		python -m cProfile -s tottime driver.py bfs 8,6,7,2,3,1,5,4,0
+	'''
+	# logging.debug("In BFS")
+	# display(initialState)
+	initialNode = create_node(initialState, None, "", 0)
+
+	# frontier = [] #put get
+	childSet = set() #add remove
+	frontierStack = [] #append pop as stack from right
+
+	childSet.add(str(initialNode.state))
+
+	# frontier.append(initialNode)
+	frontierStack.append(initialNode)
+
+	nodesExpanded = 1
+	maxSearchDepth = 0
+	while len(frontierStack)!=0:
+		# print "len of frontierQueue",frontierQueue.qsize()
+		checkNode = frontierStack.pop() #pop the queue
+		# print "len frontierQueue",frontierQueue.qsize()
+
+		if checkNode.state == goalState:
+			solution = [checkNode,nodesExpanded-1,maxSearchDepth]
+			return solution
+
+		tempFrontier = []
+		nodesExpanded= nodesExpanded+1
+		tempFrontier.append(expand_node("dfs",checkNode))
+		for x in tempFrontier:
+			for tempNode in x:
+				if str(tempNode.state) not in childSet:
+					maxSearchDepth = max(tempNode.costOfPath,maxSearchDepth)
+					# display(tempNode.state)
+					frontierStack.append(tempNode)
+					childSet.add(str(tempNode.state))
+					# print "len frontierQueue",frontierQueue.qsize()
+				# else:
+					# logging.info("already visited")
+		# raw_input()
+
+	return "None Solution"
+
+'''	logging.debug("In DFS")
 
 	nodesQueue = []
 	frontier = set()
@@ -125,7 +184,7 @@ def dfs():
 	# 	if direction not in ["up","down","left","right"]:
 	# 		break
 	solution = "DUMMY SOLUTION"
-	return solution
+	return solution'''
 def ast():
 	logging.debug("In AST")
 	solution = "DUMMY SOLUTION"
@@ -180,3 +239,10 @@ else:
 	solution = algorithm()  # call respective algorithms
 	if solution:
 		file_output(solution[0].pathToGoal,solution[0].costOfPath,solution[1],solution[0].costOfPath,solution[2])
+	'''
+	TODO:
+		frontier class
+		child nodes  too in nodein tempFrontier
+		remove O(n^2)
+		python -m cProfile -s tottime driver.py bfs 8,6,7,2,3,1,5,4,0
+	'''
