@@ -4,7 +4,7 @@ import logging
 import resource
 import Queue
 
-logging.basicConfig(format='%(levelname)s : %(asctime)s : %(message)s', datefmt='%I:%M:%S %p',level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s : %(asctime)s : %(lineno)d : %(message)s', datefmt='%I:%M:%S %p',level=logging.DEBUG)
 
 class Node:
 	def __init__(self,state,parent,pathToGoal,costOfPath):
@@ -49,15 +49,14 @@ def move(node,direction):
 			skipSwap = True
 		else:
 			swapIndex = blankIndex + 1
-
 	else:
 		logging.error("Invalid move direction!")
 	if skipSwap:
-		# logging.debug("Move Skipped!")
+		logging.debug("Move Skipped!")
 		return "skipped"
 	else:
 		nodeState[blankIndex],nodeState[swapIndex] = nodeState[swapIndex],0 #swap blank to the direction
-	# display(nodeState)
+	display(nodeState)
 
 	return nodeState
 
@@ -67,9 +66,11 @@ def expand_node(algorithm,node):
 		for direction in directionList:
 			newNodeState = move(node,direction)
 			if (newNodeState != "skipped"):
+				logging.log("skipped creation of childNode"+str(newNodeState))
 				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1))
 	elif algorithm == "dfs":
 		for direction in reversed(directionList):
+			logging.debug(direction)
 			newNodeState = move(node,direction)
 			if (newNodeState != "skipped"):
 				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1))
@@ -78,7 +79,7 @@ def expand_node(algorithm,node):
 
 def bfs():
 
-	# logging.debug("In BFS")
+	logging.debug("In BFS")
 	# display(initialState)
 	initialNode = create_node(initialState, None, "", 0)
 
@@ -112,10 +113,11 @@ def bfs():
 					maxSearchDepth = max(tempNode.costOfPath,maxSearchDepth)
 					# display(tempNode.state)
 					frontierQueue.put(tempNode)
+					# logging.info("index for blank"+str(tempNode.state.index(0)))
 					childSet.add(str(tempNode.state))
 					# print "len frontierQueue",frontierQueue.qsize()
-				# else:
-					# logging.info("already visited")
+				else:
+					logging.info("already visited")
 		# raw_input()
 
 	return "None Solution"
@@ -129,8 +131,7 @@ def dfs():
 		remove O(n^2)
 		python -m cProfile -s tottime driver.py bfs 8,6,7,2,3,1,5,4,0
 	'''
-	# logging.debug("In BFS")
-	# display(initialState)
+	logging.debug("In DFS")
 	initialNode = create_node(initialState, None, "", 0)
 
 	# frontier = [] #put get
@@ -144,8 +145,8 @@ def dfs():
 
 	nodesExpanded = 1
 	maxSearchDepth = 0
-	while len(frontierStack)!=0:
-		# print "len of frontierQueue",frontierQueue.qsize()
+	while len(frontierStack)!=0 and raw_input():
+		# print "len of frontierStack",len(frontierStack)
 		checkNode = frontierStack.pop() #pop the queue
 		# print "len frontierQueue",frontierQueue.qsize()
 
@@ -156,19 +157,20 @@ def dfs():
 		tempFrontier = []
 		nodesExpanded= nodesExpanded+1
 		tempFrontier.append(expand_node("dfs",checkNode))
-		for x in tempFrontier:
+		for x in reversed(tempFrontier):
 			for tempNode in x:
+				# logging.debug("exoanded to nodes:>>"+str(display(tempNode.state)))
 				if str(tempNode.state) not in childSet:
 					maxSearchDepth = max(tempNode.costOfPath,maxSearchDepth)
 					# display(tempNode.state)
 					frontierStack.append(tempNode)
 					childSet.add(str(tempNode.state))
 					# print "len frontierQueue",frontierQueue.qsize()
-				# else:
-					# logging.info("already visited")
+				else:
+					logging.info("already visited")
 		# raw_input()
 
-	return "None Solution"
+	return [initialNode,nodesExpanded-1,maxSearchDepth]
 
 '''	logging.debug("In DFS")
 
@@ -191,7 +193,6 @@ def ast():
 	return solution
 def file_output(*args):
 	output = open("output.txt","wb")
-
 	output.write("path_to_goal: %s \n" % (list(args[0].split(" ")[1:]))); #the sequence of moves taken to reach the goal
 	output.write("cost_of_path: %s \n" % (args[1]));#the number of moves taken to reach the goal
 	output.write("nodes_expanded: %i \n" % (args[2])); # the number of nodes that have been expanded
@@ -241,6 +242,7 @@ else:
 		file_output(solution[0].pathToGoal,solution[0].costOfPath,solution[1],solution[0].costOfPath,solution[2])
 	'''
 	TODO:
+		child of a node also has child ehich is his parent
 		frontier class
 		child nodes  too in nodein tempFrontier
 		remove O(n^2)
