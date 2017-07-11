@@ -4,7 +4,7 @@ import logging
 import resource
 import Queue
 
-logging.basicConfig(format='%(levelname)s : %(asctime)s : %(lineno)d : %(message)s', datefmt='%I:%M:%S %p',level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s : %(asctime)s : %(lineno)d : %(message)s', datefmt='%I:%M:%S %p',level=logging.ERROR)
 
 class Node:
 	def __init__(self,state,parent,pathToGoal,costOfPath):
@@ -12,12 +12,14 @@ class Node:
 		self.parent = parent
 		self.pathToGoal = pathToGoal
 		self.costOfPath = costOfPath
+
 class Frontier:
 	def __init__(self,state):
 		self.state = state
-
 def create_node(state,parent,pathToGoal,costOfPath):
 	return Node(state,parent,pathToGoal,costOfPath)
+
+
 
 def move(node,direction):
 	nodeState = node.state[:] # list of states
@@ -56,7 +58,7 @@ def move(node,direction):
 		return "skipped"
 	else:
 		nodeState[blankIndex],nodeState[swapIndex] = nodeState[swapIndex],0 #swap blank to the direction
-	display(nodeState)
+	# display(nodeState)
 
 	return nodeState
 
@@ -66,7 +68,7 @@ def expand_node(algorithm,node):
 		for direction in directionList:
 			newNodeState = move(node,direction)
 			if (newNodeState != "skipped"):
-				logging.log("skipped creation of childNode"+str(newNodeState))
+				logging.info("skipped creation of childNode"+str(newNodeState))
 				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1))
 	elif algorithm == "dfs":
 		for direction in reversed(directionList):
@@ -74,8 +76,15 @@ def expand_node(algorithm,node):
 			newNodeState = move(node,direction)
 			if (newNodeState != "skipped"):
 				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1))
+	elif algorithm == "ast":
+		for direction in directionList:
+			newNodeState = move(node,direction)
+			if (newNodeState != "skipped"):
+				logging.info("skipped creation of childNode"+str(newNodeState))
+				childNodes.append(create_node_ast(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1,manPriorFunc(node) + node.costOfPath))
 
 	return childNodes
+
 
 def bfs():
 
@@ -145,7 +154,7 @@ def dfs():
 
 	nodesExpanded = 1
 	maxSearchDepth = 0
-	while len(frontierStack)!=0 and raw_input():
+	while len(frontierStack)!=0:
 		# print "len of frontierStack",len(frontierStack)
 		checkNode = frontierStack.pop() #pop the queue
 		# print "len frontierQueue",frontierQueue.qsize()
@@ -162,6 +171,7 @@ def dfs():
 				# logging.debug("exoanded to nodes:>>"+str(display(tempNode.state)))
 				if str(tempNode.state) not in childSet:
 					maxSearchDepth = max(tempNode.costOfPath,maxSearchDepth)
+					logging.debug("expanded")
 					# display(tempNode.state)
 					frontierStack.append(tempNode)
 					childSet.add(str(tempNode.state))
@@ -187,10 +197,60 @@ def dfs():
 	# 		break
 	solution = "DUMMY SOLUTION"
 	return solution'''
+class NodeAST:
+	def __init__(self,state,parent,pathToGoal,costOfPath,priorityFunc):
+		self.state = state
+		self.parent = parent
+		self.pathToGoal = pathToGoal
+		self.costOfPath = costOfPath
+		self.priorityFunc = priorityFunc
+def create_node_ast(state,parent,pathToGoal,costOfPath,priorityFunc):
+	return NodeAST(state,parent,pathToGoal,costOfPath,priorityFunc)
+
 def ast():
+	max_search_depth = 0
+
 	logging.debug("In AST")
-	solution = "DUMMY SOLUTION"
-	return solution
+	nodesQueue = []
+	nodesExpanded = set()
+	nodesCheck = set()
+
+	initialNode = create_node_ast(initialState, None, "", 0, 0)
+	nodesQueue.append(initialNode)
+	# print initialNode.priorityFunc
+	nodesCheck.add(str(nodesQueue[0].state))
+	while len(nodesQueue) != 0:
+		# Priority Queue
+		nodesQueue = sorted(nodesQueue, key = lambda x: (x.priorityFunc))
+		# Remove the First One of the Queue
+		nodeNext = nodesQueue.pop(0)
+		nodesExpanded.add(str(nodeNext.state))
+		nodesCheck.remove(str(nodeNext.state))
+		# Goal Check
+		if nodeNext.state == goalState:
+			#Max_Search_Depth
+			for node in nodesQueue:
+				max_search_depth = max(node.costOfPath,max_search_depth)
+			solution = [nodeNext, len(nodesExpanded) - 1, max_search_depth]
+			return solution
+		# Extend
+		tempQueue = []
+		tempQueue.extend(expand_node("ast",nodeNext))
+		for tempNode in tempQueue:
+			# Visited Check
+			if str(tempNode.state) not in nodesExpanded and str(tempNode.state) not in nodesCheck:
+				nodesCheck.add(str(tempNode.state))
+				nodesQueue.append(tempNode)
+
+	return None
+# Manhattan Priority Function mpf
+def manPriorFunc(currentNode):
+	mpf = 0
+	if currentNode != None:
+		for i in range(1,len(currentNode.state)):
+			mpf += abs((currentNode.state.index(i) % 3 + 1) - (goalState.index(i) % 3 +1 )) + abs(3 - (currentNode.state.index(i) // 3) - (3 - (goalState.index(i) // 3)))
+		return mpf
+
 def file_output(*args):
 	output = open("output.txt","wb")
 	output.write("path_to_goal: %s \n" % (list(args[0].split(" ")[1:]))); #the sequence of moves taken to reach the goal
@@ -202,20 +262,21 @@ def file_output(*args):
 	output.write("max_ram_usage: %.8f \n" % (float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / 1024))
 	output.close()
 
-	read_file_output()
+	# read_file_output()
 def read_file_output():
 	output = open("output.txt","r+")
 	# logging.debug("OPENING FILE OUTPUT\n"+output.read())
 	print output.read()
 	output.close()
 def display(state): #display pretty
-	print "-------------"
-	print "| %i | %i | %i |" % (state[0], state[1], state[2])
-	print "-------------"
-	print "| %i | %i | %i |" % (state[3], state[4], state[5])
-	print "-------------"
-	print "| %i | %i | %i |" % (state[6], state[7], state[8])
-	print "-------------"
+	if logging.getLogger().getEffectiveLevel() < logging.info:
+		print "-------------"
+		print "| %i | %i | %i |" % (state[0], state[1], state[2])
+		print "-------------"
+		print "| %i | %i | %i |" % (state[3], state[4], state[5])
+		print "-------------"
+		print "| %i | %i | %i |" % (state[6], state[7], state[8])
+		print "-------------"
 
 
 startTime = time.time()
