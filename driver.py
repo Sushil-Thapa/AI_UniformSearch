@@ -7,17 +7,15 @@ import Queue
 logging.basicConfig(format='%(levelname)s : %(asctime)s : %(lineno)d : %(message)s', datefmt='%I:%M:%S %p',level=logging.CRITICAL)
 
 class Node:
-	def __init__(self,state,parent,pathToGoal,costOfPath):
+	def __init__(self,state,parent,pathToGoal,costOfPath,priorityFunc):
 		self.state = state
 		self.parent = parent
 		self.pathToGoal = pathToGoal
 		self.costOfPath = costOfPath
+		self.priorityFunc = priorityFunc
 
-class Frontier:
-	def __init__(self,state):
-		self.state = state
-def create_node(state,parent,pathToGoal,costOfPath):
-	return Node(state,parent,pathToGoal,costOfPath)
+def create_node(state,parent,pathToGoal,costOfPath,priorityFunc=None):
+	return Node(state,parent,pathToGoal,costOfPath,priorityFunc)
 
 
 
@@ -81,7 +79,7 @@ def expand_node(algorithm,node):
 			newNodeState = move(node,direction)
 			if (newNodeState != "skipped"):
 				logging.info("skipped creation of childNode"+str(newNodeState))
-				childNodes.append(create_node_ast(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1,manPriorFunc(node) + node.costOfPath))
+				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1,manPriorFunc(node) + node.costOfPath))
 
 	return childNodes
 
@@ -204,16 +202,6 @@ def dfs():
 	# 		break
 	solution = "DUMMY SOLUTION"
 	return solution'''
-class NodeAST:
-	def __init__(self,state,parent,pathToGoal,costOfPath,priorityFunc):
-		self.state = state
-		self.parent = parent
-		self.pathToGoal = pathToGoal
-		self.costOfPath = costOfPath
-		self.priorityFunc = priorityFunc
-def create_node_ast(state,parent,pathToGoal,costOfPath,priorityFunc):
-	return NodeAST(state,parent,pathToGoal,costOfPath,priorityFunc)
-
 def ast():
 	max_search_depth = 0
 
@@ -222,7 +210,7 @@ def ast():
 	nodesExpanded = set()
 	nodesCheck = set()
 
-	initialNode = create_node_ast(initialState, None, "", 0, 0)
+	initialNode = create_node(initialState, None, "", 0, 0)
 	nodesQueue.append(initialNode)
 	# print initialNode.priorityFunc
 	nodesCheck.add(str(nodesQueue[0].state))
@@ -269,7 +257,7 @@ def file_output(*args):
 	output.write("max_ram_usage: %.8f \n" % (float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / 1024))
 	output.close()
 
-	# read_file_output()
+	read_file_output()
 def read_file_output():
 	output = open("output.txt","r+")
 	# logging.debug("OPENING FILE OUTPUT\n"+output.read())
