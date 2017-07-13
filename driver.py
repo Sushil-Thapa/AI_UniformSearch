@@ -1,24 +1,36 @@
+import heapq
 import sys
 import time
 import logging
 import resource
 import Queue
+from collections import OrderedDict
+
 
 logging.basicConfig(format='%(levelname)s : %(asctime)s : %(lineno)d : %(message)s', datefmt='%I:%M:%S %p',level=logging.CRITICAL)
 
 class Node:
+<<<<<<< HEAD
 	def __init__(self,state,parent,pathToGoal,costOfPath,priorityFunc):
+=======
+	def __init__(self,state,parent=None,move=None,costOfPath=0):
+>>>>>>> main
 		self.state = state
 		self.parent = parent
-		self.pathToGoal = pathToGoal
+		self.move = move
 		self.costOfPath = costOfPath
 		self.priorityFunc = priorityFunc
 
+<<<<<<< HEAD
 def create_node(state,parent,pathToGoal,costOfPath,priorityFunc=None):
 	return Node(state,parent,pathToGoal,costOfPath,priorityFunc)
 
 
 
+=======
+def create_node(state,parent=None,move=None,costOfPath=0):
+	return Node(state,parent,move,costOfPath)
+>>>>>>> main
 def move(node,direction):
 	nodeState = node.state[:] # list of states
 	blankIndex = node.state.index(0) #index of blank
@@ -67,20 +79,24 @@ def expand_node(algorithm,node):
 			newNodeState = move(node,direction)
 			if (newNodeState != "skipped"):
 				logging.info("skipped creation of childNode"+str(newNodeState))
-				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1))
+				childNodes.append(create_node(newNodeState,node,direction, node.costOfPath+1))
 	elif algorithm == "dfs":
 		for direction in reversed(directionList):
-			# logging.debug(direction)
+			logging.debug(direction)
 			newNodeState = move(node,direction)
 			if (newNodeState != "skipped"):
-				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1))
+				childNodes.append(create_node(newNodeState,node,direction, node.costOfPath+1))
 	elif algorithm == "ast":
 		for direction in directionList:
 			newNodeState = move(node,direction)
 			if (newNodeState != "skipped"):
 				logging.info("skipped creation of childNode"+str(newNodeState))
+<<<<<<< HEAD
 				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1,manPriorFunc(node) + node.costOfPath))
 
+=======
+				childNodes.append(create_node(newNodeState,node,direction, node.costOfPath+1))
+>>>>>>> main
 	return childNodes
 
 
@@ -88,46 +104,65 @@ def bfs():
 
 	logging.debug("In BFS")
 	# display(initialState)
-	initialNode = create_node(initialState, None, "", 0)
+	initialNode = create_node(initialState, None, None, 0) #root_node
 
 	# frontier = [] #put get
-	childSet = set() #add remove
-	frontierQueue = Queue.Queue()
+	# childSet = set() #add remove
+	# frontierQueue = Queue.Queue()
 
-	childSet.add(str(initialNode.state))
+	# childSet.add(str(initialNode.state))
 
 	# frontier.append(initialNode)
-	frontierQueue.put(initialNode)
+	# frontierQueue.put(initialNode)
+	exploredDict = OrderedDict()
+	frontierDict = OrderedDict()
 
-	nodesExpanded = 1
+	nodesExpanded = 0
 	maxSearchDepth = 0
-	while not frontierQueue.empty():
+	frontierDict[hash(str(initialNode.state))] = initialNode
+	while frontierDict:
 		# print "len of frontierQueue",frontierQueue.qsize()
-		checkNode = frontierQueue.get() #pop the queue
+		checkNode = frontierDict.popitem(last=False)[1]#pop the queue
 		# print "len frontierQueue",frontierQueue.qsize()
 
 		if checkNode.state == goalState:
+			path = []
+			tempNode = checkNode
+			while tempNode.parent:
+				path.append(tempNode.move)
+				tempNode= tempNode.parent
+			path = [i for i in reversed(path)]
 
-			solution = [checkNode,nodesExpanded-1,maxSearchDepth]
+
+
+			solution = [checkNode,path,nodesExpanded,maxSearchDepth]
 			return solution
 
 		tempFrontier = []
-		nodesExpanded= nodesExpanded+1
-		tempFrontier.append(expand_node("bfs",checkNode))
-		for x in tempFrontier:
-			for tempNode in x:
-				if str(tempNode.state) not in childSet:
-					maxSearchDepth = max(tempNode.costOfPath,maxSearchDepth)
-					# display(tempNode.state)
-					frontierQueue.put(tempNode)
-					# logging.info("index for blank"+str(tempNode.state.index(0)))
-					childSet.add(str(tempNode.state))
-					# print "len frontierQueue",frontierQueue.qsize()
-				else:
-					logging.info("already visited")
-		# raw_input()
+		tempFrontier.extend(expand_node("bfs",checkNode))
 
-	return "None Solution"
+		unexplored = []
+		for tempNode in tempFrontier:
+			# for tempNode in x:
+			hashValue = hash(str(tempNode.state))
+			try:
+				frontierDict[hashValue]
+				continue
+			except KeyError:
+				try:
+					exploredDict[hashValue]
+					continue
+				except KeyError:
+					unexplored.append(tempNode)
+		if unexplored:
+			for neighbour in unexplored:
+				maxSearchDepth = max(neighbour.costOfPath,maxSearchDepth)
+				frontierDict[hash(str(neighbour.state))]=neighbour
+		nodesExpanded= nodesExpanded+1
+
+		exploredDict[hash(str(checkNode.state))]=checkNode
+
+	return False
 
 
 def dfs():
@@ -139,53 +174,82 @@ def dfs():
 		python -m cProfile -s tottime driver.py bfs 8,6,7,2,3,1,5,4,0
 	'''
 	logging.debug("In DFS")
-	initialNode = create_node(initialState, None, "", 0)
+	initialNode = create_node(initialState, None, None, 0) #root_node
 
 	# frontier = [] #put get
-	childSet = set() #add remove
-	frontierStack = [] #append pop as stack from right
+	# childSet = set() #add remove
+	# childSet = {}
+	# frontierStack = [] #append pop as stack from right
 
-	childSet.add(str(initialNode.state))
+	exploredDict = OrderedDict()
+	frontierDict = OrderedDict()
+
+	# childSet.add(str(initialNode.state))
 
 	# frontier.append(initialNode)
-	frontierStack.append(initialNode)
+	frontierDict[hash(str(initialNode.state))]= initialNode
 
 	nodesExpanded = 1
 	maxSearchDepth = 0
-	while len(frontierStack)!=0:
+	while frontierDict:
 		# raw_input()
 		# print "len of frontierStack",len(frontierStack)
-		checkNode = frontierStack.pop() #pop the queue
+		checkNode = frontierDict.popitem()[1] #pop the queue
 		# print "len frontierQueue",frontierQueue.qsize()
 
 		# display(checkNode.state)
+		maxSearchDepth = max(checkNode.costOfPath,maxSearchDepth)
+
 
 		if checkNode.state == goalState:
-			solution = [checkNode,nodesExpanded-1,maxSearchDepth]
+			path = []
+			tempNode = checkNode
+			while tempNode.parent:
+				path.append(tempNode.move)
+				tempNode= tempNode.parent
+			path = [i for i in reversed(path)]
+
+
+
+			solution = [checkNode,path,nodesExpanded-1,maxSearchDepth]
 			return solution
 
 		tempFrontier = []
 		nodesExpanded= nodesExpanded+1
 		tempFrontier.extend(expand_node("dfs",checkNode))
 
+		unexplored = []
 		for tempNode in tempFrontier:
 			# for tempNode in x:
+			hashValue = hash(str(tempNode.state))
+			try:
+				frontierDict[hashValue]
+				continue
+			except KeyError:
+				try:
+					exploredDict[hashValue]
+					continue
+				except KeyError:
+					unexplored.append(tempNode)
+		if unexplored:
+			for neighbour in unexplored:
+				frontierDict[hash(str(neighbour.state))]=neighbour
+		exploredDict[hash(str(checkNode.state))]=checkNode
+	return False
 
-				if str(tempNode.state) not in childSet:
-					if tempNode.state == goalState:
-						solution = [tempNode,nodesExpanded-1,maxSearchDepth]
-						return solution
-					maxSearchDepth = max(tempNode.costOfPath,maxSearchDepth)
-					# logging.debug("expanded")
-					# display(tempNode.state)
-					frontierStack.append(tempNode)
-					childSet.add(str(tempNode.state))
-					# print "len frontierQueue",frontierQueue.qsize()
-				else:
-					logging.debug("already visited")
-		# raw_input()
+		# 		if not childSet.get(tuple(tempNode.state)):
+		# 			if tempNode.state == goalState:
+		# 				solution = [tempNode,nodesExpanded-1,maxSearchDepth]
+		# 				return solution
+		# 			# logging.debug("expanded")
+		# 			# display(tempNode.state)
+		# 			frontierStack.append(tempNode)
+		# 			childSet[tuple(tempNode.state)]= tempNode
+		# 			# print "len frontierQueue",frontierQueue.qsize()
+		# 		else:
+		# 			logging.debug("already visited")
+		# # raw_input()
 
-	return [initialNode,nodesExpanded-1,maxSearchDepth]
 
 '''	logging.debug("In DFS")
 
@@ -202,53 +266,109 @@ def dfs():
 	# 		break
 	solution = "DUMMY SOLUTION"
 	return solution'''
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
 def ast():
-	max_search_depth = 0
 
 	logging.debug("In AST")
+<<<<<<< HEAD
 	nodesQueue = []
 	nodesExpanded = set()
 	nodesCheck = set()
 
 	initialNode = create_node(initialState, None, "", 0, 0)
 	nodesQueue.append(initialNode)
-	# print initialNode.priorityFunc
-	nodesCheck.add(str(nodesQueue[0].state))
-	while len(nodesQueue) != 0:
-		# Priority Queue
-		nodesQueue = sorted(nodesQueue, key = lambda x: (x.priorityFunc))
-		# Remove the First One of the Queue
-		nodeNext = nodesQueue.pop(0)
-		nodesExpanded.add(str(nodeNext.state))
-		nodesCheck.remove(str(nodeNext.state))
-		# Goal Check
-		if nodeNext.state == goalState:
-			#Max_Search_Depth
-			for node in nodesQueue:
-				max_search_depth = max(node.costOfPath,max_search_depth)
-			solution = [nodeNext, len(nodesExpanded) - 1, max_search_depth]
-			return solution
-		# Extend
-		tempQueue = []
-		tempQueue.extend(expand_node("ast",nodeNext))
-		for tempNode in tempQueue:
-			# Visited Check
-			if str(tempNode.state) not in nodesExpanded and str(tempNode.state) not in nodesCheck:
-				nodesCheck.add(str(tempNode.state))
-				nodesQueue.append(tempNode)
+=======
+	# nodesQueue = []
+	# nodesExpanded = set()
+	# nodesCheck = set()
+	exploredDict = OrderedDict()
+	frontierDict = OrderedDict()
+	frontierList = []
+	maxSearchDepth= 0
+	nodesExpanded = 0
 
-	return None
+	initialNode = create_node(initialState, None, None, 0) #root_node
+	frontierDict[hash(str(initialNode.state))]=initialNode
+
+	heapq.heappush(frontierList,(initialNode.costOfPath+manPriorFunc(initialNode),initialNode))
+>>>>>>> main
+	# print initialNode.priorityFunc
+	# nodesCheck.add(str(nodesQueue[0].state))
+	while frontierList:
+		# Priority Queue
+		# nodesQueue = sorted(nodesQueue, key = lambda x: (x.priorityFunc))
+		# Remove the First One of the Queue
+		# nodeNext = nodesQueue.pop(0)
+		# nodesExpanded.add(str(nodeNext.state))
+		# nodesCheck.remove(str(nodeNext.state))
+		# Goal Check
+		totalCost,checkNode = heapq.heappop(frontierList)
+		maxSearchDepth = max(checkNode.costOfPath,maxSearchDepth)
+		if checkNode.state == goalState:
+			#Max_Search_Depth
+			path = []
+			tempNode = checkNode
+			while tempNode.parent:
+				path.append(tempNode.move)
+				tempNode= tempNode.parent
+			path = [i for i in reversed(path)]
+
+
+
+			solution = [checkNode,path,nodesExpanded,maxSearchDepth]
+			return solution
+			# for node in nodesQueue:
+			# 	max_search_depth = max(node.costOfPath,max_search_depth)
+			# solution = [nodeNext, len(nodesExpanded) - 1, max_search_depth]
+			# return solution
+
+		# Extend
+		# tempQueue = []
+		# tempQueue.extend(expand_node("ast",nodeNext))
+		# for tempNode in tempQueue:
+		# 	# Visited Check
+		# 	if str(tempNode.state) not in nodesExpanded and str(tempNode.state) not in nodesCheck:
+		# 		nodesCheck.add(str(tempNode.state))
+		# 		nodesQueue.append(tempNode)
+
+		tempFrontier = []
+		tempFrontier.extend(expand_node("ast",checkNode))
+
+
+		unexplored = []
+		for tempNode in tempFrontier:
+			# for tempNode in x:
+			hashValue = hash(str(tempNode.state))
+			try:
+				exploredDict[hashValue]
+				continue
+			except KeyError:
+				try:
+					frontierDict[hashValue]
+					continue
+				except KeyError:
+					frontierDict[hash(str(tempNode.state))]=tempNode
+					# print manPriorFunc(tempNode)
+					# raw_input("show")
+
+					heapq.heappush(frontierList,(tempNode.costOfPath+manPriorFunc(tempNode),tempNode))
+		nodesExpanded= nodesExpanded+1
+		exploredDict[hash(str(checkNode.state))]=checkNode
+	return False
 # Manhattan Priority Function mpf
 def manPriorFunc(currentNode):
 	mpf = 0
 	if currentNode != None:
 		for i in range(1,len(currentNode.state)):
 			mpf += abs((currentNode.state.index(i) % 3 + 1) - (goalState.index(i) % 3 +1 )) + abs(3 - (currentNode.state.index(i) // 3) - (3 - (goalState.index(i) // 3)))
-		return mpf
+	return mpf
 
 def file_output(*args):
 	output = open("output.txt","wb")
-	output.write("path_to_goal: %s \n" % (list(args[0].split(" ")[1:]))); #the sequence of moves taken to reach the goal
+	output.write("path_to_goal: %s \n" % (args[0])); #the sequence of moves taken to reach the goal
 	output.write("cost_of_path: %s \n" % (args[1]));#the number of moves taken to reach the goal
 	output.write("nodes_expanded: %i \n" % (args[2])); # the number of nodes that have been expanded
 	output.write("search_depth: %i \n" % (args[3])); #the depth within the search tree when the goal node is found
@@ -295,7 +415,11 @@ else:
 	     raise NotImplementedError("Method %s not implemented" % algorithmName)
 	solution = algorithm()  # call respective algorithms
 	if solution:
-		file_output(solution[0].pathToGoal,solution[0].costOfPath,solution[1],solution[0].costOfPath,solution[2])
+		#[checkNode,path,nodesExpanded-1,maxSearchDepth]
+		#path_to_goal,cost_of_path,nodes_expanded,search_depth,max_search_depth
+		file_output(solution[1],solution[0].costOfPath,solution[2],solution[0].costOfPath,solution[3])
+	else:
+		print "none"
 	'''
 	TODO:
 		child of a node also has child ehich is his parent
