@@ -10,27 +10,14 @@ from collections import OrderedDict
 logging.basicConfig(format='%(levelname)s : %(asctime)s : %(lineno)d : %(message)s', datefmt='%I:%M:%S %p',level=logging.CRITICAL)
 
 class Node:
-<<<<<<< HEAD
-	def __init__(self,state,parent,pathToGoal,costOfPath,priorityFunc):
-=======
 	def __init__(self,state,parent=None,move=None,costOfPath=0):
->>>>>>> main
 		self.state = state
 		self.parent = parent
 		self.move = move
 		self.costOfPath = costOfPath
-		self.priorityFunc = priorityFunc
 
-<<<<<<< HEAD
-def create_node(state,parent,pathToGoal,costOfPath,priorityFunc=None):
-	return Node(state,parent,pathToGoal,costOfPath,priorityFunc)
-
-
-
-=======
-def create_node(state,parent=None,move=None,costOfPath=0):
+def create_node(state,parent,move,costOfPath):
 	return Node(state,parent,move,costOfPath)
->>>>>>> main
 def move(node,direction):
 	nodeState = node.state[:] # list of states
 	blankIndex = node.state.index(0) #index of blank
@@ -91,12 +78,7 @@ def expand_node(algorithm,node):
 			newNodeState = move(node,direction)
 			if (newNodeState != "skipped"):
 				logging.info("skipped creation of childNode"+str(newNodeState))
-<<<<<<< HEAD
-				childNodes.append(create_node(newNodeState,node,node.pathToGoal+" "+direction, node.costOfPath+1,manPriorFunc(node) + node.costOfPath))
-
-=======
 				childNodes.append(create_node(newNodeState,node,direction, node.costOfPath+1))
->>>>>>> main
 	return childNodes
 
 
@@ -266,21 +248,10 @@ def dfs():
 	# 		break
 	solution = "DUMMY SOLUTION"
 	return solution'''
-<<<<<<< HEAD
-=======
 
->>>>>>> main
 def ast():
 
 	logging.debug("In AST")
-<<<<<<< HEAD
-	nodesQueue = []
-	nodesExpanded = set()
-	nodesCheck = set()
-
-	initialNode = create_node(initialState, None, "", 0, 0)
-	nodesQueue.append(initialNode)
-=======
 	# nodesQueue = []
 	# nodesExpanded = set()
 	# nodesCheck = set()
@@ -294,7 +265,6 @@ def ast():
 	frontierDict[hash(str(initialNode.state))]=initialNode
 
 	heapq.heappush(frontierList,(initialNode.costOfPath+manPriorFunc(initialNode),initialNode))
->>>>>>> main
 	# print initialNode.priorityFunc
 	# nodesCheck.add(str(nodesQueue[0].state))
 	while frontierList:
@@ -377,7 +347,7 @@ def file_output(*args):
 	output.write("max_ram_usage: %.8f \n" % (float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / 1024))
 	output.close()
 
-	read_file_output()
+	# read_file_output()
 def read_file_output():
 	output = open("output.txt","r+")
 	# logging.debug("OPENING FILE OUTPUT\n"+output.read())
